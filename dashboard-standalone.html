@@ -14,6 +14,18 @@
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+  /* ---- login gate ---- */
+  #gate{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)}
+  .gate-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:48px 40px 40px;max-width:400px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.07)}
+  .gate-card h2{margin:0 0 6px;font-size:22px;color:var(--ink)}
+  .gate-card p{margin:0 0 28px;font-size:14px;color:var(--muted)}
+  .gate-card .logo{width:56px;height:56px;border-radius:14px;background:var(--brand);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:#fff;font-size:26px}
+  #g_id_onload,#gate-error{font-size:13px;margin-top:16px;color:var(--muted)}
+  #gate-error{color:#c0392b;display:none}
+  /* logout chip no header */
+  .user-chip{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px}
+  .user-chip img{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.4)}
+  .user-chip button{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer}
   .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 64px}
   header.top{background:var(--brand);color:#fff;border-radius:16px;padding:24px 28px;margin-bottom:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
   header.top h1{margin:0 0 4px;font-size:22px;font-weight:600}
@@ -68,12 +80,37 @@
 </style>
 </head>
 <body>
+<!-- Login gate (visível quando não autenticado) -->
+<div id="gate" style="display:none">
+  <div class="gate-card">
+    <div class="logo">📊</div>
+    <h2>Auditorias SIA</h2>
+    <p>Acesso restrito a <strong>@seazone.com.br</strong></p>
+    <div id="g_id_onload"
+         data-client_id="546368847057-pn202hd8itcoka4v4db4dpravp9pa06t.apps.googleusercontent.com"
+         data-callback="handleGoogleLogin"
+         data-auto_prompt="true">
+    </div>
+    <div class="g_id_signin"
+         data-type="standard"
+         data-size="large"
+         data-theme="outline"
+         data-text="signin_with"
+         data-shape="rectangular"
+         data-logo_alignment="left">
+    </div>
+    <div id="gate-error">E-mail não autorizado. Use sua conta @seazone.com.br.</div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
 <div class="wrap">
   <header class="top">
     <div>
       <h1>Auditorias SIA — Feedback de atendimentos</h1>
       <p>Canal SIA (WhatsApp) · histórico diário por time</p>
     </div>
+    <div class="user-chip" id="userChip"></div>
   </header>
 
   <div class="conf">🔒 Conteúdo confidencial — contém dados de clientes (nomes e telefones). Uso interno Seazone. Não compartilhe capturas de tela fora do time.</div>
@@ -96,7 +133,68 @@
   <div id="view"></div>
   <footer>Identificação por auto-apresentação nas conversas. Telefones/IDs conforme base sup_prd_sia. Exemplos citam apenas falas da própria atendente.</footer>
 </div>
+</div><!-- /#app -->
 
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+// ---- Auth gate ----
+var ALLOWED_DOMAIN = 'seazone.com.br';
+var SESSION_KEY = 'sia_auth_v1';
+
+function parseJwt(token) {
+  try { return JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); } catch(e) { return null; }
+}
+
+function showApp(user) {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').style.display = '';
+  var chip = document.getElementById('userChip');
+  if (chip) chip.innerHTML = (user.picture ? '<img src="'+user.picture+'" alt="">' : '') +
+    '<span>'+user.email+'</span>' +
+    '<button onclick="logout()">Sair</button>';
+}
+
+function showGate(error) {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('gate').style.display = 'flex';
+  if (error) {
+    var el = document.getElementById('gate-error');
+    if (el) el.style.display = '';
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  if (window.google && google.accounts && google.accounts.id) {
+    google.accounts.id.disableAutoSelect();
+    google.accounts.id.revoke(JSON.parse(sessionStorage.getItem(SESSION_KEY)||'{}').email||'', function(){});
+  }
+  showGate(false);
+}
+
+function handleGoogleLogin(response) {
+  var payload = parseJwt(response.credential);
+  if (!payload) { showGate(true); return; }
+  var email = (payload.email || '').toLowerCase();
+  if (!email.endsWith('@' + ALLOWED_DOMAIN)) { showGate(true); return; }
+  var user = { email: email, name: payload.name, picture: payload.picture };
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+  showApp(user);
+}
+
+// Verificar sessão existente
+var saved = sessionStorage.getItem(SESSION_KEY);
+if (saved) {
+  try {
+    var u = JSON.parse(saved);
+    if (u.email && u.email.endsWith('@' + ALLOWED_DOMAIN)) { showApp(u); }
+    else { showGate(false); }
+  } catch(e) { showGate(false); }
+} else {
+  showGate(false);
+}
+// ---- fim auth gate ----
+</script>
 <script>
 var DB = {
 "2026-06-16": {
