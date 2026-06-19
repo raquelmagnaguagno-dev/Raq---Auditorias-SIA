@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auditorias SIA — Feedback de Atendimentos</title>
+<style>
+  :root{
+    --bg:#f4f6f9;--surface:#ffffff;--ink:#13233b;--muted:#5d6b7e;--line:#e3e8ef;
+    --brand:#185FA5;
+    --good:#3B6D11;--good-soft:#EAF3DE;--good-line:#C0DD97;
+    --warn:#854F0B;--warn-soft:#FAEEDA;--warn-line:#FAC775;
+    --cs:#D85A30;--sup:#185FA5;--inv:#534AB7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 64px}
+  header.top{background:var(--brand);color:#fff;border-radius:16px;padding:24px 28px;margin-bottom:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header.top h1{margin:0 0 4px;font-size:22px;font-weight:600}
+  header.top p{margin:0;opacity:.9;font-size:13px}
+  .bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px}
+  .bar label{color:var(--muted);font-weight:600}
+  .bar select,.bar input{padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;color:var(--ink);background:#fff}
+  .bar input{flex:1;min-width:200px}
+  .bar button{padding:9px 14px;border:1px solid var(--brand);background:var(--brand);color:#fff;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+  .bar small{flex-basis:100%;color:var(--muted)}
+  .conf{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn-line);border-radius:10px;padding:10px 14px;font-size:12.5px;margin-bottom:16px}
+  .tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+  .tabs button{flex:1;min-width:150px;padding:13px 16px;border:1px solid var(--line);background:var(--surface);border-radius:12px;font-size:15px;font-weight:600;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px}
+  .tabs button .d{width:11px;height:11px;border-radius:50%}
+  .tabs button.active{color:#fff}
+  .tabs button[data-t="cs"].active{background:var(--cs);border-color:var(--cs)}
+  .tabs button[data-t="sup"].active{background:var(--sup);border-color:var(--sup)}
+  .tabs button[data-t="inv"].active{background:var(--inv);border-color:var(--inv)}
+  .teamhead{font-size:13px;color:var(--muted);margin:0 0 14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:24px}
+  .metric{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .metric .name{font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px}
+  .dot{width:10px;height:10px;border-radius:50%;flex:none}
+  .metric .sub{color:var(--muted);font-size:12px;margin-top:6px}
+  .metric .big{font-size:24px;font-weight:700;margin-top:8px}
+  .metric .big span{font-size:13px;font-weight:500;color:var(--muted)}
+  .metric.off .big{color:var(--warn);font-size:18px}
+  section.agent{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-bottom:20px;overflow:hidden}
+  .agent h2{margin:0;padding:18px 22px;font-size:19px;font-weight:600;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .agent h2 .meta{margin-left:auto;font-size:12px;font-weight:500;color:var(--muted);text-align:right}
+  .banner{background:var(--warn-soft);color:var(--warn);font-size:13px;padding:10px 22px;border-bottom:1px solid var(--warn-line)}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  @media(max-width:780px){.cols{grid-template-columns:1fr}}
+  .col{padding:18px 22px}
+  .col.fortes{border-right:1px solid var(--line)}
+  @media(max-width:780px){.col.fortes{border-right:0;border-bottom:1px solid var(--line)}}
+  .col h3{margin:0 0 14px;font-size:13px;text-transform:uppercase;letter-spacing:.04em}
+  .col.fortes h3{color:var(--good)}
+  .col.atencao h3{color:var(--warn)}
+  .item{border-radius:10px;padding:12px 14px;margin-bottom:10px;border:1px solid var(--line)}
+  .col.fortes .item{background:var(--good-soft);border-color:var(--good-line)}
+  .col.atencao .item{background:var(--warn-soft);border-color:var(--warn-line)}
+  .item .t{font-weight:600;font-size:14px;margin-bottom:4px}
+  .item .d{font-size:13.5px;color:#33404f}
+  .ex{margin-top:9px;font-size:12.5px;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;border-top:1px dashed rgba(0,0,0,.12);padding-top:8px}
+  .ex .who{font-weight:600}
+  .ex .tag{color:var(--muted)}
+  .ex a.sess{color:var(--brand);text-decoration:none;font-weight:600;cursor:pointer}
+  .ex a.sess:hover{text-decoration:underline}
+  .ex .sid{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:var(--muted)}
+  footer{color:var(--muted);font-size:12px;text-align:center;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Auditorias SIA — Feedback de atendimentos</h1>
+      <p>Canal SIA (WhatsApp) · histórico diário por time</p>
+    </div>
+  </header>
+
+  <div class="conf">🔒 Conteúdo confidencial — contém dados de clientes (nomes e telefones). Uso interno Seazone. Não compartilhe capturas de tela fora do time.</div>
+
+  <div class="bar">
+    <label for="dia">Dia</label>
+    <select id="dia"></select>
+    <label for="base">Link base SIA</label>
+    <input id="base" type="text" placeholder="ex.: https://sia.seazone.com.br/atendimentos/">
+    <button id="applyBtn">Aplicar links</button>
+    <small>Selecione o dia. Cole o endereço da SIA e clique em "Aplicar links" para tornar os "abrir na SIA" clicáveis. Ctrl+P gera PDF.</small>
+  </div>
+
+  <div class="tabs">
+    <button class="active" data-t="cs"><span class="d" style="background:var(--cs)"></span>CS — Sucesso do Cliente</button>
+    <button data-t="sup"><span class="d" style="background:var(--sup)"></span>Suporte</button>
+    <button data-t="inv"><span class="d" style="background:var(--inv)"></span>Investimentos</button>
+  </div>
+
+  <div id="view"></div>
+  <footer>Identificação por auto-apresentação nas conversas. Telefones/IDs conforme base sup_prd_sia. Exemplos citam apenas falas da própria atendente.</footer>
+</div>
+
+<script>
+var DB = {
+"2026-06-16": {
+  label: "16/06/2026",
+  teams: {
+    "cs":[
+      {"n":"Julyana Cardoso","m":"118 msgs · 13h20–21h04 · maior volume",
+       "f":[{"t":"Condução consultiva de distrato","d":"Investigou o motivo da migração para aluguel anual, registrou o feedback internamente e confirmou o contrato com a inquilina antes de seguir.","e":{"w":"Alexandre","o":"prop. (nome na SIA)","p":"5531994003406","s":"bf247459-8c8c-4dc1-a678-1185f0668a9b"}},
+            {"t":"Transparência sobre limitações","d":"“Ainda não temos um processo padrão de vistoria final no encerramento… estamos estudando inserir esse procedimento.” Honesta e propositiva.","e":{"w":"Alexandre","p":"5531994003406","s":"bf247459-8c8c-4dc1-a678-1185f0668a9b"}},
+            {"t":"Didática no processo","d":"Explicou o distrato em lista numerada com prazos e canais."}],
+       "a":[{"t":"Equilíbrio entre chamados","d":"Boa parte do volume em um único atendimento extenso; equilibrar o tempo na fila."},
+            {"t":"Personalização","d":"Mensagens de processo idênticas às de outros dias; personalizar a abertura."},
+            {"t":"Revisão ao digitar rápido","d":"Pequenos ajustes de digitação."}]},
+      {"n":"Gabriele Figueiredo","m":"49 msgs · 12h08–21h34",
+       "f":[{"t":"Continuidade de caso (follow-through)","d":"Deu sequência ao inventário: coletou dados para o novo contrato, encaminhou ao jurídico e enviou o contrato para assinatura.","e":{"w":"Aline Falcão","o":"prop.: Henrique Ferreira Filho","p":"5511985991223","s":"f4a2d2a0-1fa9-4656-9cbb-337a79760f40"}},
+            {"t":"Distrato claro","d":"Explicou o processo de distrato em tópicos com prazos.","e":{"w":"Carlos","o":"prop. (nome na SIA)","p":"5521967206833","s":"817800e8-4e18-4190-94b5-f03f61437e9b"}},
+            {"t":"Proximidade e disponibilidade","d":"Mantém chamados abertos e tom acolhedor."}],
+       "a":[{"t":"Digitação","d":"“adovogado”, “repasses repasses” (duplicado), “Boom dia”, “pega-los” — revisar.","e":{"w":"Aline Falcão","p":"5511985991223","s":"f4a2d2a0-1fa9-4656-9cbb-337a79760f40"}},
+            {"t":"Informalidade","d":"“haha” em contexto de contrato/inventário; calibrar."},
+            {"t":"Clareza em cláusulas","d":"Ao tratar de cláusula de quitação, organizar a explicação para não gerar dúvida."}]},
+      {"n":"Raquel Szabo","m":"25 msgs · 12h05–20h57 · dia leve",
+       "f":[{"t":"Retenção / visão de longo prazo","d":"“Podemos combinar um novo contato em 3 meses para a renovação e deixar pronto para a alta temporada?”","e":{"w":"Luiz (MHF1601)","p":"5567999825562","s":"c1ce6349-7205-4468-a579-7f545c204ffe"}},
+            {"t":"Acompanhamento","d":"Manteve chamados abertos para o dia seguinte, pedindo o melhor horário para reagendar.","e":{"w":"Gislene (MSU0906)","p":"5533984031434","s":"7ad6baf7-5937-41b6-a1a8-c778386e0f0d"}},
+            {"t":"Identificação cordial padrão","d":"Abertura calorosa e clara do time de Sucesso do Cliente."}],
+       "a":[{"t":"Baixo volume no dia","d":"25 mensagens; confirmar distribuição de chamados/fila."},
+            {"t":"Encerramentos padronizados","d":"Mensagens de encerramento idênticas entre chamados."},
+            {"t":"Fechar próximo passo com data","d":"Nos chamados mantidos abertos, deixar combinado quando retomar."}]}
+    ],
+    "sup":[
+      {"n":"Larissa Pereira da Silva","m":"200 msgs · 13h18–23h20 · maior volume",
+       "f":[{"t":"Clareza financeira excepcional","d":"Explicou reembolsos × descontos no extrato (danos de mesa e sofá, R$1.030 reembolsados, descontos de regularização) item a item.","e":{"w":"Lolita","o":"prop.: Lourimar Cardoso Saunier","p":"557399662952","s":"03296785-5c8e-4dfb-9cd9-9924607e4894"}},
+            {"t":"Humildade ao errar","d":"“Perdão, Leandro! Te chamei pelo nome errado na mensagem anterior.” Corrigiu prontamente.","e":{"w":"Leandro Pereira","o":"prop.: Leandro Freitas Pereira","p":"5511985008338","s":"db49c814-bcf5-4d91-a4cc-f79fe2e9ec2c"}},
+            {"t":"Orientação ao canal certo","d":"Direcionou imóvel inativo ao Comercial com o contato e transferiu caso de aluguel anual ao time responsável."}],
+       "a":[{"t":"Atenção ao nome do cliente","d":"Chamou o cliente pelo nome errado (corrigido depois); conferir antes de enviar.","e":{"w":"Leandro Pereira","p":"5511985008338","s":"db49c814-bcf5-4d91-a4cc-f79fe2e9ec2c"}},
+            {"t":"Encerrar por ausência de retorno","d":"Avaliar o tempo de espera antes de finalizar."},
+            {"t":"Volume × ritmo","d":"200 mensagens; manter a qualidade sob alta demanda."}]},
+      {"n":"Luana Ornelas Camargo Silva","m":"139 msgs · 12h22–20h58",
+       "f":[{"t":"Empatia em reclamação séria","d":"Acolheu o relato de hóspede presa no elevador e do atendimento despreparado: “sinto muito… vamos tomar as devidas providências”.","e":{"w":"Ludmylla","o":"prop. (nome na SIA)","p":"557191732303","s":"fccfdeaa-7419-4aec-81d0-cee50a3d364b"}},
+            {"t":"Transparência financeira","d":"Detalhou receita, despesas e repasse previsto (R$2.405,68 p/ 10/07) e a ocupação (70%, 21 diárias).","e":{"w":"Marianne Abreu","p":"557599426128","s":"b04309d1-eb63-4926-8e8f-ec54b89d7d77"}},
+            {"t":"Investigação de caso","d":"Esclareceu realocação de reserva e confusão de hóspedes com calma e detalhe."}],
+       "a":[{"t":"Encerramentos idênticos","d":"“Vou finalizar esse chamado então…” repetido; personalizar."},
+            {"t":"Volume","d":"139 mensagens; manter consistência."},
+            {"t":"Confirmar entendimento","d":"Em casos com várias reservas, validar o que o cliente quer ver antes de detalhar."}]},
+      {"n":"Julia Scovino Fontola","m":"112 msgs · 12h00–21h12",
+       "f":[{"t":"Explicação de precificação dinâmica","d":"Esclareceu que Natal/Ano Novo não têm preço padronizado e depende de demanda, antecedência e desempenho.","e":{"w":"Julia Carolina Smaniotto","p":"555481570077","s":"471e2f2a-d266-4789-a9df-02d0426b0ea7"}},
+            {"t":"Orientação fiscal","d":"Orientou sobre a declaração do IR (receita + dedução da comissão, com base no informe de rendimentos).","e":{"w":"Be Happy! (Fernanda de Jesus Perez)","p":"555397054608","s":"742e85e5-9265-45fd-871d-8da15491aee3"}},
+            {"t":"Encaminhamento ao comercial","d":"Forneceu o contato do time comercial quando fora do escopo."}],
+       "a":[{"t":"Encerrar por ausência de retorno","d":"“Devido a ausência de retorno, precisarei finalizar essa conversa.” Garantir tempo de espera.","e":{"w":"cliente","s":"471e2f2a-d266-4789-a9df-02d0426b0ea7"}},
+            {"t":"Personalização","d":"Mensagens de encerramento/pesquisa idênticas."},
+            {"t":"Revisão","d":"Pequeno deslize de digitação (“declaressem”)."}]},
+      {"n":"Mickael Lucena de Souza","m":"Suporte bilíngue PT/ES","off":true,"banner":"⚠️ Sem atendimentos na SIA em 16/06. Último dia ativo: 05/06. Confirmar escala/disponibilidade.",
+       "f":[{"t":"Atendimento bilíngue","d":"Atende investidores/proprietários em espanhol (perfil histórico)."}],
+       "a":[{"t":"Ausência em 16/06","d":"Sem atendimentos no dia analisado; alinhar escala/cobertura."},
+            {"t":"Avaliação pendente","d":"Refazer com base no próximo dia ativo."}]}
+    ],
+    "inv":[
+      {"n":"Daisi Marsaro","m":"229 msgs · 12h02–21h13 · maior volume",
+       "f":[{"t":"Honestidade + alternativa","d":"“Não conseguiremos flexibilizar o fluxo agora… mas, após o primeiro reforço, pode solicitar a flexibilização.” Deu o caminho viável.","e":{"w":"Pedro","o":"cliente s/ nome cadastrado","p":"554999336660","s":"1b78ac3d-c6b2-4f95-957a-845c61a9c315"}},
+            {"t":"Recuperação de falha do bot","d":"“Vi que ficou retido pela IA. Peço desculpas… o pessoal está atuando para melhorar o fluxo do bot.”","e":{"w":"Neimar May","o":"BRALUX Adm. de Bens Ltda","p":"554791155511","s":"3e02031e-6ad1-4ab0-87b8-967a2d308cba"}},
+            {"t":"Direciona ao Painel do Investidor","d":"Orientou o novo painel (CPF/CNPJ) com link."}],
+       "a":[{"t":"Não induzir a nota","d":"“…receber sua nota 10 ✨” enviesa a pesquisa; manter neutro."},
+            {"t":"Suavizar negativas","d":"Uso de “:(” e “Não” diretos; reformular para tom propositivo."},
+            {"t":"“muuuuito” informal","d":"Calibrar a linguagem no fechamento."}]},
+      {"n":"Tábata Tacyani Tavares","m":"124 msgs · 12h06–20h46",
+       "f":[{"t":"Distinção clara de sistemas","d":"Explicou a diferença entre Painel (andamento da obra) e Portal do Investidor (boletos/extratos) com os links.","e":{"w":"Vanessa Gonçalves","p":"555391572206","s":"f65ac59f-3c58-4176-92fc-756915f51eb9"}},
+            {"t":"Transparência em pendências","d":"Sobre ACS e distrato em curso: “já solicitamos o cálculo do financeiro, mas ainda não tivemos retorno”."},
+            {"t":"Acolhimento padronizado cordial","d":"Abertura calorosa consistente."}],
+       "a":[{"t":"Saudação sem o nome do cliente","d":"“Olá,! Espero que esteja bem” — nome não preenchido na abertura.","e":{"w":"Sammy","p":"558196451605","s":"4287980c-c372-4e3b-a3c5-294dc71c1e33"}},
+            {"t":"Follow-up de pendências","d":"Vários “vou abrir suporte/aguarde”; garantir retorno no prazo."},
+            {"t":"Revisão","d":"“por gentielza” (digitação)."}]},
+      {"n":"Karoline (Karol) Solange Borges Teobaldo","m":"75 msgs · 12h10–21h31",
+       "f":[{"t":"Explicação societária robusta","d":"Esclareceu responsabilidade dos sócios na SPE e que não depende de quem assinou a última ACS — precisa e clara.","e":{"w":"Alexandre Augusto Franchi","p":"5519997722398","s":"c070568b-d0f1-4f6a-940e-53abc882c6fb"}},
+            {"t":"Gestão de expectativa","d":"Define prazos claros para suportes (“em média 2 dias e te trago o retorno”)."},
+            {"t":"Disponibilidade alternativa","d":"Sem poder ligar, ofereceu troca por áudio para não travar o atendimento.","e":{"w":"Alexandre Augusto Franchi","p":"5519997722398","s":"c070568b-d0f1-4f6a-940e-53abc882c6fb"}}],
+       "a":[{"t":"Não induzir a nota","d":"“…receber sua nota 5✨” — manter neutro.","e":{"w":"Mauro Hernan Ratto","p":"5548999516428","s":"4ee70062-02e0-43c6-ba61-bec23fbc79db"}},
+            {"t":"“muuuuito” informal","d":"Ajustar o registro no fechamento."},
+            {"t":"Encerramentos padronizados","d":"Mensagens repetidas; pequenas personalizações."}]},
+      {"n":"Simone de Carvalho Franco","m":"43 msgs · 13h16–21h08",
+       "f":[{"t":"Priorização e prazo","d":"“Já solicitei prioridade para o seu caso. Acredito que até quinta-feira eu já tenha a devolutiva.”","e":{"w":"Gabriela Tapia","p":"5491150971257","s":"d7550fcb-8d41-471c-94e6-bb38b0636aea"}},
+            {"t":"Clareza em boletos/parcelas","d":"Explicou que as demais parcelas, com o CPF enviado, serão emitidas por boleto e enviadas por e-mail.","e":{"w":"Adriane","p":"56999646958","s":"b44e5063-9fbd-439b-a367-cc2e38dc02c9"}},
+            {"t":"Cordialidade e organização","d":"Aberturas educadas e encaminhamentos financeiros estruturados."}],
+       "a":[{"t":"Saudação sem o nome do cliente","d":"“Oi, bom dia!” sem o nome — preencher/confirmar o nome.","e":{"w":"cliente s/ nome","p":"56962082092","s":"a1808a6d-230e-43b3-a06e-63a78776ed1b"}},
+            {"t":"Saudações em série","d":"Aberturas idênticas em sequência; personalizar."},
+            {"t":"Cobertura no início do dia","d":"Atuação a partir das 13h16; avaliar disponibilidade na manhã."}]}
+    ]
+  }
+},
+"2026-06-15": {
+  label: "15/06/2026",
+  teams: {
+    "cs":[
+      {"n":"Julyana Cardoso","m":"112 msgs · 12h24–21h08 · maior volume",
+       "f":[{"t":"Empatia + não fazer repetir","d":"“Compreendo a sua insatisfação… vou verificar o histórico para que você não precise repetir toda a situação.”","e":{"w":"Cleusa Souza da Silva","p":"554199240025","s":"0ac80c71-b992-4915-88d0-c8096a48a917"}},
+            {"t":"Entrega completa e visível","d":"Ajustes de preço mínimo por imóvel e período (EST0301 e SRL002), com planos de ação e prazo de ativação.","e":{"w":"Cleusa Souza da Silva","p":"554199240025","s":"0ac80c71-b992-4915-88d0-c8096a48a917"}},
+            {"t":"Relacionamento, recuperação e upsell","d":"Isenção de quase todas as multas, encantou a cliente (prometeu indicar a Seazone) e abriu upsell (QuintoAndar).","e":{"w":"Marli","o":"proprietária","p":"5581996709744","s":"77ac2ddd-4c4b-4251-a2c1-b3df3408e323"}}],
+       "a":[{"t":"Revisão de português","d":"“Como posso te auxilio por hoje” → “te auxiliar”.","e":{"w":"Cleusa Souza da Silva","p":"554199240025","s":"0ac80c71-b992-4915-88d0-c8096a48a917"}},
+            {"t":"Evitar mensagens duplicadas","d":"A explicação do distrato foi enviada duas vezes seguidas.","e":{"w":"Luana Oliveira Carrazza","p":"556181278564","s":"5cd362b0-2086-44f5-8bd3-46797135c717"}},
+            {"t":"Tempo de 1ª resposta","d":"Cliente escreveu 13h25 e o 1º retorno foi ~14h17 (parte é fila/triagem)."}]},
+      {"n":"Gabriele Figueiredo","m":"45 msgs · 14h01–21h23",
+       "f":[{"t":"Resumo estruturado pós-reunião","d":"Recap em tópicos (custos de rescisão, almofadas/logo, orientações).","e":{"w":"Paula","o":"proprietária","p":"5571992459917","s":"adce3eca-fbed-47b6-9906-652d77fc7df5"}},
+            {"t":"Zelo e contextualização","d":"Acolheu a notícia do inventário, abriu a análise jurídica na hora e deu contexto de mercado (baixa temporada no Litoral de SC).","e":{"w":"Aline Falcão","o":"prop.: Henrique Ferreira Filho","p":"5511985991223","s":"f4a2d2a0-1fa9-4656-9cbb-337a79760f40"}},
+            {"t":"Calor e proximidade","d":"Tom humano e disponível (“conte comigo”)."}],
+       "a":[{"t":"Digitação e tom em assunto sério","d":"“Estou tentando lhe ennviar… a análise haha” num contexto de análise de desempenho.","e":{"w":"Marinita","p":"5531995722375","s":"682e3837-702f-439e-bf5a-f7021e2811ee"}},
+            {"t":"Calibrar a informalidade","d":"“Show de bola”/“haha” em temas delicados pedem registro mais formal."},
+            {"t":"Prazos realistas","d":"Evitar prometer retorno do jurídico “até amanhã” quando depende de terceiros.","e":{"w":"Aline Falcão","p":"5511985991223","s":"f4a2d2a0-1fa9-4656-9cbb-337a79760f40"}}]},
+      {"n":"Raquel Szabo","m":"32 msgs · 13h58–21h12",
+       "f":[{"t":"Clareza e condução de processos","d":"Conduziu rescisão/realocação alinhando cada próximo passo.","e":{"w":"Fabiano Colusso Ribeiro","p":"554799980064","s":"78cde8a7-af40-4c4e-8c1b-bfdde865efbf"}},
+            {"t":"Paciência e confirmação","d":"Ouviu vários áudios longos e validou antes de agir: “…os valores do 237 iguais aos do 233, certo?”.","e":{"w":"Márcia Donca","p":"5533991513112","s":"1dbf61c0-638f-4137-8449-9f4582aaa714"}},
+            {"t":"Acompanhamento ativo","d":"Manteve chamado aberto p/ o dia seguinte; gerou Meet e agendou próxima reunião (08/07).","e":{"w":"Graziela (UPP0408)","p":"5541988622374","s":"2c4ca0da-499c-4453-afae-832e1b73fc22"}}],
+       "a":[{"t":"Não expor limitação da ferramenta","d":"“…não consigo visualizar o número encaminhado” — pedir o dado de forma mais natural.","e":{"w":"Fabiano Colusso Ribeiro","p":"554799980064","s":"78cde8a7-af40-4c4e-8c1b-bfdde865efbf"}},
+            {"t":"Fechar próximo passo com data","d":"Ficou um “te aviso aqui” sem data definida.","e":{"w":"Graziela (UPP0408)","p":"5541988622374","s":"2c4ca0da-499c-4453-afae-832e1b73fc22"}},
+            {"t":"Padronizar convite à avaliação","d":"Garantir o pedido de nota em todos os encerramentos."}]},
+      {"n":"Yasmim Marques","m":"~20 msgs · até 21h",
+       "f":[{"t":"Resumo de distrato didático","d":"Resumo impecável da ligação: motivos, proposta 22%→20%, etapas e prazos.","e":{"w":"Janete","o":"proprietária","p":"5571999617828","s":"63738b72-ea97-48de-ad51-e7a29be5d315"}},
+            {"t":"Negociação embasada em histórico","d":"Buscou o valor já aceito antes para fundamentar a nova proposta de preço mínimo.","e":{"w":"Silvia","o":"proprietária","p":"5548999629421","s":"56d4c875-1afd-4d59-9bf2-f6e2eef59d6c"}},
+            {"t":"Agilidade e registro correto","d":"Respostas rápidas e diretas, com registro interno preciso."}],
+       "a":[{"t":"Acolhimento em conflito","d":"Com cliente insatisfeita, respostas muito curtas (“Entendo”/“Entendo”) podem soar distantes.","e":{"w":"Silvia","o":"proprietária","p":"5548999629421","s":"56d4c875-1afd-4d59-9bf2-f6e2eef59d6c"}},
+            {"t":"Clareza no fechamento de valores","d":"Os números (anúncio × repasse × “líquido”) ficaram confusos; confirmar o valor final acordado."},
+            {"t":"Personalização","d":"Saudações/despedidas mais personalizadas reforçariam o vínculo."}]}
+    ],
+    "sup":[
+      {"n":"Luana Ornelas Camargo Silva","m":"200 msgs · 12h15–21h07 · maior volume",
+       "f":[{"t":"Cálculos claros e transparentes","d":"Destrinchou a simulação: R$756,20 − R$185 (limpeza) ÷ 2 = R$285,60, dentro do mínimo de R$250.","e":{"w":"Lucio Saback","o":"prop.: Bahia Galpões Imobiliária Ltda","p":"557191112686","s":"4a4dd627-244b-4472-8ca0-e06e08ce1952"}},
+            {"t":"Roteamento correto","d":"Encaminhou dúvidas de investimentos à equipe certa e o distrato à consultora, com contexto."},
+            {"t":"Humildade e correção","d":"“Me desculpe, é do condomínio que quis dizer. Acabei me confundindo.”","e":{"w":"Rosane","p":"5511983338115","s":"410c6e14-4431-4ef8-b2ca-e885da4a846d"}}],
+       "a":[{"t":"Revisar antes de enviar","d":"A confusão “aluguel/condomínio” foi corrigida, mas evita ruído.","e":{"w":"Rosane","p":"5511983338115","s":"410c6e14-4431-4ef8-b2ca-e885da4a846d"}},
+            {"t":"Volume × foco","d":"200 mensagens; cuidar para não gerar respostas apressadas."},
+            {"t":"Personalizar a abertura","d":"Saudação inicial idêntica (copiada) em vários chats."}]},
+      {"n":"Julia Scovino Fontola","m":"116 msgs · 12h01–21h05",
+       "f":[{"t":"Precificação com dados de mercado","d":"“A média da concorrência está em R$107,00… operaria muito acima do mercado em baixa temporada.”","e":{"w":"Fabiano Bernardi","p":"554891678686","s":"59733f8b-351a-470a-8ee0-74894d696944"}},
+            {"t":"Didática e autonomia do cliente","d":"Ensinou o passo a passo para bloquear datas na Wallet.","e":{"w":"Maira","o":"prop.: Nina Matos Spengler","p":"5511991397606","s":"793afbab-d54d-4775-819f-6fee8ed615e1"}},
+            {"t":"Clareza entre plataformas","d":"Explicou por que os valores diferem entre Airbnb e outras plataformas."}],
+       "a":[{"t":"Pequenas digitações","d":"“preencher as informaçãoes” — revisar antes de enviar.","e":{"w":"Maira","p":"5511991397606","s":"793afbab-d54d-4775-819f-6fee8ed615e1"}},
+            {"t":"Encerrar por ausência de retorno","d":"Garantir tempo de espera adequado e deixar porta aberta com prazo."},
+            {"t":"Personalização","d":"Mensagens de pesquisa/encerramento idênticas."}]},
+      {"n":"Larissa Pereira da Silva","m":"104 msgs · 13h27–22h10",
+       "f":[{"t":"Confirma o entendimento antes de agir","d":"“Só para eu entender certinho: confirmar o endereço ou solicitar a alteração?” Evita retrabalho.","e":{"w":"Paulo Henrique Alochio de Freitas","p":"5528999048700","s":"75da9d10-ecfb-467c-8c43-ce31d60a3352"}},
+            {"t":"Didática em precificação","d":"Explicou o preço mínimo (R$630/R$400) e como a precificação dinâmica ainda atua na alta.","e":{"w":"Filipi Eccel","o":"prop.: FR Eccel Adm. de Bens","p":"554788212004","s":"ddcfc36d-587d-4c52-986b-351125b4322d"}},
+            {"t":"Acolhimento + expectativa clara","d":"Sondou o caso e definiu prazo de 48–72h úteis para a análise.","e":{"w":"Camila Pedreira Peixoto Mota","p":"557591995338","s":"c6c742ae-28be-43da-8b44-dca70f3c67d0"}}],
+       "a":[{"t":"Retomada tardia","d":"Intervalo ~15h55→19h51 para retomar; sinalizar previsão de retorno.","e":{"w":"Camila Pedreira Peixoto Mota","p":"557591995338","s":"c6c742ae-28be-43da-8b44-dca70f3c67d0"}},
+            {"t":"Encerrar por ausência de retorno","d":"Vários encerramentos rápidos; avaliar o timing."},
+            {"t":"Consistência visual","d":"Alterna 💙 e 🧡; padronizar."}]},
+      {"n":"Mickael Lucena de Souza","m":"Suporte bilíngue PT/ES","off":true,"banner":"⚠️ Sem atendimentos na SIA em 15/06. Último dia ativo: 05/06 — exemplos abaixo são desse dia.",
+       "f":[{"t":"Atendimento bilíngue","d":"Atende em espanhol: “Estás en contacto con Mickael, del Soporte al Propietario.”"},
+            {"t":"Argumentação consultiva de preço (05/06)","d":"Explicou baixa temporada, risco de perda de posicionamento e recomendou equilíbrio rentabilidade × competitividade.","e":{"w":"Adriano (CDW0102)","o":"conversa de 05/06","s":"0097c536-e15a-4958-8487-5549a3877fb6"}},
+            {"t":"Didática de plataforma (05/06)","d":"Explicou o botão “Ciente” na Wallet passo a passo.","e":{"w":"Clélia","o":"conversa de 05/06","s":"99041052-f5eb-4491-8248-79f56e50b078"}}],
+       "a":[{"t":"Ausência em 15/06","d":"Sem atendimentos no dia; alinhar escala/cobertura."},
+            {"t":"Avaliação pendente","d":"Refazer com base no próximo dia ativo."}]}
+    ],
+    "inv":[
+      {"n":"Daisi Marsaro","m":"213 msgs · 12h27–20h33 · maior volume",
+       "f":[{"t":"Transparência sobre prazos","d":"Explicou que visitas precisam de 3 dias úteis de antecedência, sem criar falsa expectativa.","e":{"w":"Gabriel Mattos","p":"13237454094","s":"8625adab-503b-4300-aa89-e0058f6e395e"}},
+            {"t":"Direciona ao recurso certo","d":"Orientou o Painel do Investidor (CPF/CNPJ) e enviou o link.","e":{"w":"Robervalter","p":"5521999381821","s":"702b4e29-7000-41f4-a59e-e5b8c8cc119f"}},
+            {"t":"Produtividade","d":"Maior volume de Investimentos no dia, mantendo organização."}],
+       "a":[{"t":"Não induzir a nota","d":"“…receber sua nota 10 ✨” enviesa a pesquisa; manter neutro.","e":{"w":"Gabriel Mattos","p":"13237454094","s":"8625adab-503b-4300-aa89-e0058f6e395e"}},
+            {"t":"Suavizar negativas","d":"Sequência de “Não… :(”; reformular para tom propositivo."},
+            {"t":"Encerramentos padronizados","d":"Mensagem de finalização repetida."}]},
+      {"n":"Tábata Tacyani Tavares","m":"179 msgs · 12h33–20h58",
+       "f":[{"t":"Acolhimento cordial e padronizado","d":"Abertura calorosa: “Meu nome é Tábata… É um prazer falar com você 😊.”"},
+            {"t":"Encaminhamento financeiro com prazo","d":"Pediu comprovantes, abriu suporte e definiu prazo (“até o final da semana”).","e":{"w":"Gabriela Delela","p":"447342818261","s":"1f773e17-804f-4606-826c-6ae1b86373a4"}},
+            {"t":"Incentiva o autoatendimento","d":"Orientou o cliente a acompanhar pelo Painel do Investidor.","e":{"w":"Fábio Hardmann","p":"557192628884","s":"a0673880-e244-45e2-a11e-6bae7ca178ce"}}],
+       "a":[{"t":"Digitação","d":"“no No mês seguinte a emissão” (duplicação/maiúscula).","e":{"w":"Fábio Hardmann","p":"557192628884","s":"a0673880-e244-45e2-a11e-6bae7ca178ce"}},
+            {"t":"Follow-up de pendências","d":"Vários “vou abrir suporte/aguarde”; garantir retorno proativo."},
+            {"t":"Equilíbrio na padronização","d":"Saudação idêntica em muitos chats."}]},
+      {"n":"Karoline (Karol) Solange Borges Teobaldo","m":"179 msgs · 12h28–21h12",
+       "f":[{"t":"Empatia em insatisfação","d":"“Entendo sua insatisfação e peço desculpas… estou buscando as informações corretas.”","e":{"w":"Arthur Justi Cassettari","p":"554888642330","s":"b31cd1db-7c80-43d7-8085-09eb87aeeabf"}},
+            {"t":"Clareza em obras e distrato","d":"Explicou vistoria + Termo de Entrega por e-mail e assinatura via Clicksign (sem Gov).","e":{"w":"Jorge Henn","p":"554599751152","s":"d42d1b91-d474-4f4e-ad02-825a6b339647"}},
+            {"t":"Proatividade","d":"Investigou ativamente registros pendentes (cancelamento não localizado)."}],
+       "a":[{"t":"Não induzir a nota","d":"“…receber sua nota 5 ✨” enviesa a pesquisa; deixar neutro.","e":{"w":"Wanderson Alexsander Ferreira","p":"5567996084494","s":"3895dc09-d836-4c2e-87e9-9d7c741bdd26"}},
+            {"t":"Calibrar a informalidade","d":"“muuuuito importante” no fechamento — registro mais profissional."},
+            {"t":"Encerramentos padronizados","d":"Mensagem repetida em vários chats."}]},
+      {"n":"Simone de Carvalho Franco","m":"79 msgs · 15h03–20h46",
+       "f":[{"t":"Instruções de pagamento claras","d":"Dados de PIX completos (favorecida, chave CNPJ, valor R$2.835,52) e pedido de comprovante.","e":{"w":"Junior De Mattos","p":"5549999056600","s":"d4c42709-ac25-4240-8dba-41b4c663dd8e"}},
+            {"t":"Empatia e retenção antes do distrato","d":"“Você havia ficado de tentar o pagamento hoje. Aconteceu algum imprevisto?”","e":{"w":"Pamella Brayner Rodrigues","p":"5548988246726","s":"5ac1a4a5-4950-4bb5-bbc2-96ca28e209bd"}},
+            {"t":"Encaminhamento financeiro organizado","d":"Abre suportes com clareza e define o canal de retorno (e-mail)."}],
+       "a":[{"t":"Saudações em série","d":"Aberturas idênticas em sequência (15h03, 15h03, 15h04…)."},
+            {"t":"Registro do nome do cliente","d":"Atendimento com cliente sem nome cadastrado; confirmar e registrar.","e":{"w":"cliente s/ nome (Murilo)","p":"5548988343500","s":"d269e30b-96ad-47d0-8bf3-bdde81d87e16"}},
+            {"t":"Cobertura no início do dia","d":"Atuação a partir das 15h03; avaliar disponibilidade na manhã."}]}
+    ]
+  }
+}
+};
+
+var team='cs', baseUrl='';
+var DOTS=['#185FA5','#1D9E75','#D85A30','#534AB7'];
+var TEAMNAMES={cs:'Sucesso do Cliente',sup:'Suporte ao Proprietário',inv:'Relacionamento com o Investidor'};
+
+function fmtPhone(p){if(!p)return '';if(p.indexOf('55')===0&&p.length===13)return '+55 '+p.slice(2,4)+' '+p.slice(4,9)+'-'+p.slice(9);if(p.indexOf('55')===0&&p.length===12)return '+55 '+p.slice(2,4)+' '+p.slice(4,8)+'-'+p.slice(8);return '+'+p;}
+function esc(t){return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function exHtml(e){if(!e)return '';var parts=[];if(e.w)parts.push('<span class="who">'+esc(e.w)+'</span>');if(e.o)parts.push('<span class="tag">'+esc(e.o)+'</span>');if(e.p)parts.push('<span class="tag">📱 '+esc(fmtPhone(e.p))+'</span>');if(e.s){var href=baseUrl?(baseUrl+e.s):'#';parts.push('<a class="sess" data-sid="'+e.s+'" href="'+href+'"'+(baseUrl?' target="_blank" rel="noopener"':'')+'>abrir na SIA</a><span class="sid">'+e.s.slice(0,8)+'…</span>');}return '<div class="ex">'+parts.join('')+'</div>';}
+function items(arr){return (arr||[]).map(function(it){return '<div class="item"><div class="t">'+esc(it.t)+'</div><div class="d">'+esc(it.d)+'</div>'+exHtml(it.e)+'</div>';}).join('');}
+function render(){
+  var dia=document.getElementById('dia').value; if(!dia){document.getElementById('view').innerHTML='<p class="teamhead">Sem dados ainda.</p>';return;}
+  var day=DB[dia]; var ags=(day.teams&&day.teams[team])||[];
+  var html='<p class="teamhead">Time de '+TEAMNAMES[team]+' · '+ags.length+' atendentes · '+esc(day.label)+'</p>';
+  html+='<div class="cards">'+ags.map(function(a,i){return '<div class="metric'+(a.off?' off':'')+'"><div class="name"><span class="dot" style="background:'+DOTS[i%4]+'"></span>'+esc(a.n.split(' ').slice(0,2).join(' '))+'</div><div class="big">'+(a.off?'sem atend.':esc((a.m.match(/^[~\d]+/)||[''])[0])+' <span>msgs</span>')+'</div><div class="sub">'+esc(a.m.replace(/^[~\d]+ msgs · ?/,''))+'</div></div>';}).join('')+'</div>';
+  html+=ags.map(function(a,i){return '<section class="agent"><h2><span class="dot" style="background:'+DOTS[i%4]+'"></span>'+esc(a.n)+' <span class="meta">'+esc(a.m)+'</span></h2>'+(a.banner?'<div class="banner">'+esc(a.banner)+'</div>':'')+'<div class="cols"><div class="col fortes"><h3>✔ Pontos fortes</h3>'+items(a.f)+'</div><div class="col atencao"><h3>▲ Pontos de atenção</h3>'+items(a.a)+'</div></div></section>';}).join('');
+  document.getElementById('view').innerHTML=html;
+}
+
+// Inicializar seletor de datas
+var sel=document.getElementById('dia');
+Object.keys(DB).sort().reverse().forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=DB[k].label;sel.appendChild(o);});
+render();
+
+document.querySelectorAll('.tabs button').forEach(function(b){b.addEventListener('click',function(){team=b.getAttribute('data-t');document.querySelectorAll('.tabs button').forEach(function(x){x.classList.remove('active')});b.classList.add('active');render();});});
+document.getElementById('dia').addEventListener('change',render);
+document.getElementById('applyBtn').addEventListener('click',function(){var b=document.getElementById('base').value.trim();if(!b){alert('Cole o link base da SIA primeiro.');return;}if(!/[\/=]$/.test(b))b+='/';baseUrl=b;render();});
+document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a.sess');if(a&&a.getAttribute('href')==='#'){e.preventDefault();if(navigator.clipboard)navigator.clipboard.writeText(a.getAttribute('data-sid'));}});
+</script>
+</body>
+</html>
