@@ -82,6 +82,8 @@
 </style>
 </head>
 <body>
+<div id="js-error" style="display:none;position:fixed;top:0;left:0;right:0;background:#c0392b;color:#fff;padding:14px 20px;font-family:monospace;font-size:13px;z-index:9999;white-space:pre-wrap"></div>
+<script>window.onerror=function(msg,src,line,col){var d=document.getElementById('js-error');if(d){d.style.display='block';d.textContent='ERRO JS: '+msg+'\nLinha '+line+', col '+col;}return false;};</script>
 <!-- Login gate (visível quando não autenticado) -->
 <div id="gate" style="display:none">
   <div class="gate-card">
