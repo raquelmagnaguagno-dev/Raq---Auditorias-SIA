@@ -178,16 +178,6 @@ function handleEmailLogin() {
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Enter' && document.getElementById('gate').style.display !== 'none') handleEmailLogin();
 });
-
-var saved = sessionStorage.getItem(SESSION_KEY);
-if (saved) {
-  try {
-    var u = JSON.parse(saved);
-    if (u.email && u.email.endsWith('@' + ALLOWED_DOMAIN)) { showApp(u); } else { showGate(false); }
-  } catch(e) { showGate(false); }
-} else {
-  showGate(false);
-}
 // ---- fim auth gate ----
 </script>
 <script>
@@ -799,8 +789,17 @@ function render(){
   document.getElementById('view').innerHTML=html;
 }
 
-// se showApp() foi chamado antes deste bloco rodar (sessão salva), inicializa agora
-if (window._pendingInit) { window._pendingInit = false; initDashboard(); }
+// Verificar sessão salva (aqui DB já está definido)
+(function() {
+  var saved = sessionStorage.getItem(SESSION_KEY);
+  if (saved) {
+    try {
+      var u = JSON.parse(saved);
+      if (u.email && u.email.endsWith('@' + ALLOWED_DOMAIN)) { showApp(u); return; }
+    } catch(e) {}
+  }
+  showGate(false);
+})();
 
 document.querySelectorAll('.tabs button').forEach(function(b){b.addEventListener('click',function(){team=b.getAttribute('data-t');document.querySelectorAll('.tabs button').forEach(function(x){x.classList.remove('active')});b.classList.add('active');render();});});
 document.getElementById('dia').addEventListener('change',render);
