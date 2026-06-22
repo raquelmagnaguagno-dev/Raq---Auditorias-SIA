@@ -20,8 +20,10 @@
   .gate-card h2{margin:0 0 6px;font-size:22px;color:var(--ink)}
   .gate-card p{margin:0 0 28px;font-size:14px;color:var(--muted)}
   .gate-card .logo{width:56px;height:56px;border-radius:14px;background:var(--brand);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:#fff;font-size:26px}
-  #g_id_onload,#gate-error{font-size:13px;margin-top:16px;color:var(--muted)}
-  #gate-error{color:#c0392b;display:none}
+  #gate-error{font-size:13px;margin-top:12px;color:#c0392b;display:none}
+  .gate-card input[type=email]{width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:10px;font-size:14px;color:var(--ink);outline:none;margin-bottom:10px}
+  .gate-card input[type=email]:focus{border-color:var(--brand)}
+  .gate-card .btn-enter{width:100%;padding:11px;background:var(--brand);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer}
   /* logout chip no header */
   .user-chip{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px}
   .user-chip img{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.4)}
@@ -86,20 +88,9 @@
     <div class="logo">📊</div>
     <h2>Auditorias SIA</h2>
     <p>Acesso restrito a <strong>@seazone.com.br</strong></p>
-    <div id="g_id_onload"
-         data-client_id="546368847057-pn202hd8itcoka4v4db4dpravp9pa06t.apps.googleusercontent.com"
-         data-callback="handleGoogleLogin"
-         data-auto_prompt="true">
-    </div>
-    <div class="g_id_signin"
-         data-type="standard"
-         data-size="large"
-         data-theme="outline"
-         data-text="signin_with"
-         data-shape="rectangular"
-         data-logo_alignment="left">
-    </div>
-    <div id="gate-error">E-mail não autorizado. Use sua conta @seazone.com.br.</div>
+    <input type="email" id="gate-email" placeholder="seu@seazone.com.br" autocomplete="email">
+    <button class="btn-enter" onclick="handleEmailLogin()">Entrar</button>
+    <div id="gate-error">E-mail não autorizado. Use seu endereço @seazone.com.br.</div>
   </div>
 </div>
 
@@ -135,60 +126,46 @@
 </div>
 </div><!-- /#app -->
 
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 // ---- Auth gate ----
 var ALLOWED_DOMAIN = 'seazone.com.br';
 var SESSION_KEY = 'sia_auth_v1';
 
-function parseJwt(token) {
-  try { return JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); } catch(e) { return null; }
-}
-
 function showApp(user) {
   document.getElementById('gate').style.display = 'none';
   document.getElementById('app').style.display = '';
   var chip = document.getElementById('userChip');
-  if (chip) chip.innerHTML = (user.picture ? '<img src="'+user.picture+'" alt="">' : '') +
-    '<span>'+user.email+'</span>' +
-    '<button onclick="logout()">Sair</button>';
+  if (chip) chip.innerHTML = '<span>' + user.email + '</span><button onclick="logout()">Sair</button>';
 }
 
 function showGate(error) {
   document.getElementById('app').style.display = 'none';
   document.getElementById('gate').style.display = 'flex';
-  if (error) {
-    var el = document.getElementById('gate-error');
-    if (el) el.style.display = '';
-  }
+  var el = document.getElementById('gate-error');
+  if (el) el.style.display = error ? '' : 'none';
 }
 
 function logout() {
   sessionStorage.removeItem(SESSION_KEY);
-  if (window.google && google.accounts && google.accounts.id) {
-    google.accounts.id.disableAutoSelect();
-    google.accounts.id.revoke(JSON.parse(sessionStorage.getItem(SESSION_KEY)||'{}').email||'', function(){});
-  }
   showGate(false);
 }
 
-function handleGoogleLogin(response) {
-  var payload = parseJwt(response.credential);
-  if (!payload) { showGate(true); return; }
-  var email = (payload.email || '').toLowerCase();
+function handleEmailLogin() {
+  var email = (document.getElementById('gate-email').value || '').trim().toLowerCase();
   if (!email.endsWith('@' + ALLOWED_DOMAIN)) { showGate(true); return; }
-  var user = { email: email, name: payload.name, picture: payload.picture };
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
-  showApp(user);
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ email: email }));
+  showApp({ email: email });
 }
 
-// Verificar sessão existente
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && document.getElementById('gate').style.display !== 'none') handleEmailLogin();
+});
+
 var saved = sessionStorage.getItem(SESSION_KEY);
 if (saved) {
   try {
     var u = JSON.parse(saved);
-    if (u.email && u.email.endsWith('@' + ALLOWED_DOMAIN)) { showApp(u); }
-    else { showGate(false); }
+    if (u.email && u.email.endsWith('@' + ALLOWED_DOMAIN)) { showApp(u); } else { showGate(false); }
   } catch(e) { showGate(false); }
 } else {
   showGate(false);
