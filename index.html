@@ -136,6 +136,18 @@ function showApp(user) {
   document.getElementById('app').style.display = '';
   var chip = document.getElementById('userChip');
   if (chip) chip.innerHTML = '<span>' + user.email + '</span><button onclick="logout()">Sair</button>';
+  if (!document.getElementById('dia').options.length) initDashboard();
+}
+
+function initDashboard() {
+  var sel = document.getElementById('dia');
+  Object.keys(DB).sort().reverse().forEach(function(k) {
+    var o = document.createElement('option');
+    o.value = k;
+    o.textContent = DB[k].label;
+    sel.appendChild(o);
+  });
+  render();
 }
 
 function showGate(error) {
@@ -781,10 +793,7 @@ function render(){
   document.getElementById('view').innerHTML=html;
 }
 
-// Inicializar seletor de datas
-var sel=document.getElementById('dia');
-Object.keys(DB).sort().reverse().forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=DB[k].label;sel.appendChild(o);});
-render();
+// seletor inicializado em showApp() após login
 
 document.querySelectorAll('.tabs button').forEach(function(b){b.addEventListener('click',function(){team=b.getAttribute('data-t');document.querySelectorAll('.tabs button').forEach(function(x){x.classList.remove('active')});b.classList.add('active');render();});});
 document.getElementById('dia').addEventListener('change',render);
