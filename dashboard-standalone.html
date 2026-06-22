@@ -136,10 +136,16 @@ function showApp(user) {
   document.getElementById('app').style.display = '';
   var chip = document.getElementById('userChip');
   if (chip) chip.innerHTML = '<span>' + user.email + '</span><button onclick="logout()">Sair</button>';
-  if (!document.getElementById('dia').options.length) initDashboard();
+  // initDashboard chamado via window.onDBReady para garantir que o bloco DB já rodou
+  if (typeof DB !== 'undefined') {
+    initDashboard();
+  } else {
+    window._pendingInit = true;
+  }
 }
 
 function initDashboard() {
+  if (document.getElementById('dia').options.length) return;
   var sel = document.getElementById('dia');
   Object.keys(DB).sort().reverse().forEach(function(k) {
     var o = document.createElement('option');
@@ -793,7 +799,8 @@ function render(){
   document.getElementById('view').innerHTML=html;
 }
 
-// seletor inicializado em showApp() após login
+// se showApp() foi chamado antes deste bloco rodar (sessão salva), inicializa agora
+if (window._pendingInit) { window._pendingInit = false; initDashboard(); }
 
 document.querySelectorAll('.tabs button').forEach(function(b){b.addEventListener('click',function(){team=b.getAttribute('data-t');document.querySelectorAll('.tabs button').forEach(function(x){x.classList.remove('active')});b.classList.add('active');render();});});
 document.getElementById('dia').addEventListener('change',render);
